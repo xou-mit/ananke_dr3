@@ -5,6 +5,7 @@ import os
 import sys
 import h5py
 import argparse
+import logging
 
 import numpy as np
 import pickle
@@ -22,9 +23,9 @@ def parse_cmd():
     parser = argparse.ArgumentParser()
     parser.add_argument('--in-file', required=True, help='Path to input file')
     parser.add_argument('--out-file', required=True, help='Path to output file')
-    parser.add_argument('--random-state', required=True, nargs=2, metavar=('save/load', 'path'), 
+    parser.add_argument('--random-state', required=True, nargs=2, metavar=('save/load', 'path'),
                         help='Save or load random state with path to file')
-    parser.add_argument('--selection', required=True, nargs='*', 
+    parser.add_argument('--selection', required=True, nargs='*',
                         help='Selection maps to apply; Availabel options are [general, astrometry, ruwe1p4, rvs]')
     parser.add_argument('--sf-data-dir', required=True, help='Path to selection function data directory')
     parser.add_argument('--batch-size', required=False, type=int, default=1000000,
@@ -32,29 +33,38 @@ def parse_cmd():
     
     return parser.parse_args()
 
+def set_logger()
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    stream_handler = logging.StreamHandler(sys.stdout)
+    stream_handler.setFormatter(formatter)
+    logger.addHandler(stream_handler)
+    return logger
 
-def selection_function(ra, dec, gmag, rpmag, output, prng, sf_subset_map, sf_type, sf_general_map, selec_data = {}):
+def selection_function(ra, dec, gmag, rpmag, prng, sf_subset_map, sf_type, sf_general_map, selec_data = {}):
     # Check that the selection is in one of the four options
-    assert sf_type in ['general', 'astrometry', 'ruwe1p4', 'rvs'], "Selection type unrecognized. Availabel options are [general, astrometry, ruwe1p4, rvs]"
+    if not sf_type in ['general', 'astrometry', 'ruwe1p4', 'rvs']:
+        raise ValueError('Selection type unrecognized. Available options are [general, astrometry, ruwe1p4, rvs]')
     
     # Pre-compute color needed for selection function
     g_grp_mag = gmag-rpmag
-
+    
     # Pre-compute the index of data that requires manual adjustment in fitting ruwe1p4 and RVS selection functions
     if sf_type == 'ruwe1p4':
         G_GRP_floor = -1.
         G_GRP_ceil = 7.
         id_G_GRP_ruwe_l = np.where(g_grp_mag < G_GRP_floor)[0]
         id_G_GRP_ruwe_u = np.where(g_grp_mag > G_GRP_ceil)[0]
-        print(len(id_G_GRP_ruwe_l),"sources found to have color redder than ruwe1p4 sf edge.")
-        print(len(id_G_GRP_ruwe_u),"sources found to have color bluer than ruwe1p4 sf edge.")
+        logger.info(f'{len(id_G_GRP_ruwe_l)} sources found to have color redder than ruwe1p4 sf edge.')
+        logger.info(f'{len(id_G_GRP_ruwe_u)} sources found to have color bluer than ruwe1p4 sf edge.')
         # Manually set the out of bound colors to the closest bin value
         g_grp_mag[id_G_GRP_ruwe_l] = G_GRP_floor + 0.1 # Add a margin to prevent numerical error
         g_grp_mag[id_G_GRP_ruwe_u] = G_GRP_ceil - 0.1
-
+    
     
     # Set up the source object for selection functions
-    source = Source(ra=ra, dec=dec, unit='deg', frame='icrs', 
+    source = Source(ra=ra, dec=dec, unit='deg', frame='icrs',
                     photometry={'gaia_g':gmag,'gaia_g_gaia_rp':g_grp_mag})
     
     # Find the expected number of observaitons if not already found
@@ -82,7 +92,7 @@ def selection_function(ra, dec, gmag, rpmag, output, prng, sf_subset_map, sf_typ
         G_GRP_floor = -0.6
         G_GRP_ceil = 2.6
         id_G_GRP_rvs = np.where((g_grp_mag < G_GRP_floor) | (g_grp_mag > G_GRP_ceil))[0]
-        print(len(id_G_GRP_rvs),"sources found to have color redder/bluer than RVS sf edge.")
+        logger.info(f'{len(id_G_GRP_rvs)} sources found to have color redder/bluer than RVS sf edge.')
         selec_data['prob_rvs'][id_G_GRP_rvs] = 0
         selec_data['selected_rvs'][id_G_GRP_rvs] = False
     
@@ -91,7 +101,7 @@ def selection_function(ra, dec, gmag, rpmag, output, prng, sf_subset_map, sf_typ
     selec_data[col_selected][id_G_mag_u] = False
     
     return selec_data
-    
+
 
 if __name__ == '__main__':
     ''' Make a synthetic survey from an extincted mock and selection functions '''
@@ -99,18 +109,21 @@ if __name__ == '__main__':
     # Parse cmd
     FLAGS = parse_cmd()
     
+    # Set logger
+    logger = set_logger()
+    
     # Define the path to selection function maps
     config['data_dir'] = FLAGS.sf_data_dir
-
+    
     # Fetch data
-    print("Fetching data...")
+    logger.info('Fetching data...')
     CoGII.fetch()
     CoGV.fetch(version='cog_v', subset='astrometry')
     CoGV.fetch(version='cog_v', subset='ruwe1p4')
     CoGV.fetch(version='cog_v', subset='rvs')
-
+    
     # Load the general map
-    print("Loading general selection function...")
+    logger.info('Loading general selection function...')
     sf_general_map = CoGII.dr3_sf(version='modelAB',crowding=True)
     
     sf_subset_maps = []
@@ -118,7 +131,7 @@ if __name__ == '__main__':
     for j_subset in FLAGS.selection:
         if j_subset == 'general':
             continue
-        print(f"Loading {j_subset} selection function...")
+        logger.info(f'Loading {j_subset} selection function...')
         sf_subset_maps.append(CoGV.subset_sf(map_fname=j_subset+'_cogv.h5', nside=32,
                                              basis_options={'needlet':'chisquare', 'p':1.0, 'wavelet_tol':1e-2},
                                              spherical_basis_directory='SphericalBasis'))
@@ -131,32 +144,31 @@ if __name__ == '__main__':
     f = h5py.File(FLAGS.in_file, 'r')
     fo = h5py.File(FLAGS.out_file, 'a')
     N = len(f['dmod_true'])
-    print(f'Total number of sources:{N}')
+    logger.info(f'Total number of sources:{N}')
     N_batch = (N + FLAGS.batch_size - 1) // FLAGS.batch_size
-
-
+    
     # Save or load the random state
     if FLAGS.random_state[0] == 'save':
-        print("Saving random state")
+        logger.info(f'Saving random state to {FLAGS.random_state[1]}')
         prng = np.random.RandomState()
         state = prng.get_state()
-        with open(FLAGS.random_state[1], 'wb') as frand: 
+        with open(FLAGS.random_state[1], 'wb') as frand:
             pickle.dump(state, frand)
     elif FLAGS.random_state[0] == 'load':
-        print('Loading random state')
+        logger.info(f'Loading random state from {FLAGS.random_state[1]}')
         with open(FLAGS.random_state[1], 'rb') as frand:
             state = pickle.load(frand)
         prng = np.random.RandomState()
         prng.set_state(state)
     else:
-        print('Unexpected save/load instruction for random state')
+        logger.error('Unexpected save/load instruction for random state')
         sys.exit()
     
     
     # Apply selection function
     for i_batch in range(N_batch):
-        print(f'[{i_batch}/{N_batch}]')
-
+        logger.info(f'[{i_batch}/{N_batch}]')
+        
         i_start = i_batch * FLAGS.batch_size
         i_stop = i_start + FLAGS.batch_size
         
@@ -171,26 +183,26 @@ if __name__ == '__main__':
         for j_subset in range(len(FLAGS.selection)):
             # Reset the random state to what it is at the beginning of this batch to guarantee consistent selection across subsets
             prng.set_state(state_tmp)
-            selec_data = selection_function(ra=ra, dec=dec, gmag=gmag, rpmag=rpmag, output=fo, prng=prng, 
-                                            sf_subset_map=sf_subset_maps[j_subset], sf_type=FLAGS.selection[j_subset], sf_general_map=sf_general_map, selec_data=selec_data)
+            selec_data = selection_function(ra=ra, dec=dec, gmag=gmag, rpmag=rpmag, prng=prng,
+                                            sf_subset_map=sf_subset_maps[j_subset], sf_type=FLAGS.selection[j_subset],
+                                            sf_general_map=sf_general_map, selec_data=selec_data)
         # Reduce the size to only those selected for good ...
         # Count how many are left for this batch [xx: TBD]
         N_batch_selected = len(ra[selec_data['selected_ruwe1p4']])
-        print(f'Number of selected sources for this batch {N_batch_selected}')
+        logger.info(f'Number of selected sources for this batch {N_batch_selected}')
         # Include the original and selection data columns
         data_slice = {}
-
+        
         # Create an index list for identifying what stars are selected
         index_selec = np.arange(i_start, i_start+len(selec_data['selected_ruwe1p4']))
         data_slice['index_in_mock'] = index_selec[selec_data['selected_ruwe1p4']]
 
         for key in f.keys():
             data_slice[key] = f[key][i_start: i_stop][selec_data['selected_ruwe1p4']]
-
+        
         for key in selec_data.keys():
             data_slice[key] = selec_data[key][selec_data['selected_ruwe1p4']]
         io.append_dataset_dict(fo, data_slice, overwrite=False)
-        
     
     f.close()
     fo.close()
