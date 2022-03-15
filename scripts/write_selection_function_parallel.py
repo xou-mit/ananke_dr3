@@ -47,7 +47,7 @@ for ijob in range(Njob):
         f.write('#SBATCH -p normal\n')
         f.write('#SBATCH -A TG-PHY210118\n')
         f.write('#SBATCH --job-name selection_function\n')
-        f.write('#SBATCH --time 1:30:00\n')
+        f.write('#SBATCH --time 2:00:00\n')
         f.write('#SBATCH --mail-type begin\n')
         f.write('#SBATCH --mail-type end\n')
         f.write('#SBATCH --mail-user xwou@mit.edu\n')
