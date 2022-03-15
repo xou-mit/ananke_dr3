@@ -10,8 +10,8 @@ walltime = sys.argv[4]
 print(gal, lsr, rslice)
 
 in_dir = f'/scratch/05328/tg846280/FIRE_Public_Simulations/ananke_dr3/{gal}/lsr_{lsr}'
-out_dir = f'/scratch/05328/tg846280/FIRE_Public_Simulations/ananke_dr3/{gal}_select/lsr_{lsr}'
-rs_dir = f'/scratch/05328/tg846280/FIRE_Public_Simulations/ananke_dr3/{gal}_select/lsr_{lsr}/random_states'
+out_dir = f'/scratch/05328/tg846280/FIRE_Public_Simulations/ananke_dr3/{gal}_select_2/lsr_{lsr}'
+rs_dir = f'/scratch/05328/tg846280/FIRE_Public_Simulations/ananke_dr3/{gal}_select_2/lsr_{lsr}/random_states'
 rand_state_ls = 'save'
 sf_data_dir = '/scratch/05328/tg846280/FIRE_Public_Simulations/ananke_dr3/selectionfunction_data'
 submit_dir = f'/work2/08052/tg873515/stampede2/ananke_fire_gaia_dr3/submit_{gal}_lsr{lsr}_rslice{rslice}'
