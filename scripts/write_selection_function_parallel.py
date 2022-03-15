@@ -9,17 +9,18 @@ rslice = sys.argv[3]
 print(gal, lsr, rslice)
 
 in_dir = f'/scratch/05328/tg846280/FIRE_Public_Simulations/ananke_dr3/{gal}/lsr_{lsr}'
-out_dir = f'/scratch/05328/tg846280/FIRE_Public_Simulations/ananke_dr3/{gal}/lsr_{lsr}/ruwe1p4_sf'
-rand_state_ls = 'load'
-rand_state_file = '/scratch/08052/tg873515/ananke_fire_gaia_dr3/ananke_dr3/m12i/lsr_0/test_random_state.pkl'
-sf_data_dir = '/work2/08052/tg873515/stampede2/ananke_fire_gaia_dr3/selectionfunction_data'
+out_dir = f'/scratch/05328/tg846280/FIRE_Public_Simulations/ananke_dr3/{gal}_select/lsr_{lsr}'
+rs_dir = f'/scratch/05328/tg846280/FIRE_Public_Simulations/ananke_dr3/{gal}_select/lsr_{lsr}/random_states'
+rand_state_ls = 'save'
+sf_data_dir = '/scratch/05328/tg846280/FIRE_Public_Simulations/ananke_dr3/selectionfunction_data'
 submit_dir = f'/work2/08052/tg873515/stampede2/ananke_fire_gaia_dr3/submit_{gal}_lsr{lsr}_rslice{rslice}'
 
 os.makedirs(out_dir, exist_ok=True)
 os.makedirs(submit_dir, exist_ok=True)
 
 in_file_temp = "lsr-{}-rslice-{}.{}-res7100-md-sliced-gcat-dr3.{}.hdf5" #lsr-0-rslice-0.m12i-res7100-md-sliced-gcat-dr3.0.hdf5
-out_file_temp = "lsr-{}-rslice-{}.{}-res7100-md-sliced-gcat-dr3-ruwe1p4-sf.{}.hdf5"
+out_file_temp = "lsr-{}-rslice-{}.{}-res7100-md-sliced-gcat-dr3.{}.hdf5"
+rs_file_tmp = "lsr-{}-rslice-{}.{}-res7100-md-sliced-gcat-dr3.{}.pkl"
 
 Njob = 10
 cmd_template = 'python /work2/08052/tg873515/stampede2/ananke_fire_gaia_dr3/ananke_dr3/selection_function_ruwe.py --in-file {} --out-file {} --random-state {} {} --selection ruwe1p4 rvs --sf-data-dir {}'
@@ -30,7 +31,8 @@ for ijob in range(Njob):
     out_file = os.path.join(out_dir, out_file_temp.format(lsr, rslice, gal, ijob))
     print(out_file)
     in_file = os.path.join(in_dir, in_file_temp.format(lsr, rslice, gal, ijob))
-    cmd = cmd_template.format(in_file, out_file, rand_state_ls, rand_state_file, sf_data_dir)
+    rs_file = os.path.join(rs_dir, rs_file_temp.format(lsr, rslice, gal, ijob))
+    cmd = cmd_template.format(in_file, out_file, rand_state_ls, rs_file, sf_data_dir)
 
     log_out_fn = f'out-{ijob}.out'
     log_err_fn = f'err-{ijob}.err'
