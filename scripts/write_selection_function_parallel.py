@@ -20,7 +20,7 @@ os.makedirs(submit_dir, exist_ok=True)
 
 in_file_temp = "lsr-{}-rslice-{}.{}-res7100-md-sliced-gcat-dr3.{}.hdf5" #lsr-0-rslice-0.m12i-res7100-md-sliced-gcat-dr3.0.hdf5
 out_file_temp = "lsr-{}-rslice-{}.{}-res7100-md-sliced-gcat-dr3.{}.hdf5"
-rs_file_tmp = "lsr-{}-rslice-{}.{}-res7100-md-sliced-gcat-dr3.{}.pkl"
+rs_file_temp = "lsr-{}-rslice-{}.{}-res7100-md-sliced-gcat-dr3.{}.pkl"
 
 Njob = 10
 cmd_template = 'python /work2/08052/tg873515/stampede2/ananke_fire_gaia_dr3/ananke_dr3/selection_function_ruwe.py --in-file {} --out-file {} --random-state {} {} --selection ruwe1p4 rvs --sf-data-dir {}'
