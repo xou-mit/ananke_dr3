@@ -5,6 +5,7 @@ import sys
 gal = sys.argv[1]
 lsr = sys.argv[2]
 rslice = sys.argv[3]
+walltime = sys.argv[4]
 
 print(gal, lsr, rslice)
 
@@ -47,7 +48,7 @@ for ijob in range(Njob):
         f.write('#SBATCH -p normal\n')
         f.write('#SBATCH -A TG-PHY210118\n')
         f.write('#SBATCH --job-name selection_function\n')
-        f.write('#SBATCH --time 2:00:00\n')
+        f.write('#SBATCH --time {}\n'.format(walltime))
         f.write('#SBATCH --mail-type begin\n')
         f.write('#SBATCH --mail-type end\n')
         f.write('#SBATCH --mail-user xwou@mit.edu\n')
@@ -61,7 +62,7 @@ for ijob in range(Njob):
         f.write('cd $WORK/ananke_fire_gaia_dr3\n')
         f.write('conda activate ananke_gdr3\n')
         f.write('export PYTHONPATH=/home1/08052/tg873515/anaconda3/envs/ananke_gdr3/lib/python3.9/site-packages\n')
-        f.write('date')
+        f.write('date\n')
         
         f.write(cmd + '\n')
 
